@@ -60,12 +60,14 @@ public class Tester {
 		w.close();
 
 
+		System.out.println("******** INDEXES ********");
 		String[] list = index.listAll();
 		System.out.println(list.length);
 		for (int i = 0; i < list.length; i++) {
 
 			System.out.println(list[i]);
 		}
+		System.out.println("*************************");
 
 		// 2. query
 		String querystr = "action";
@@ -88,12 +90,15 @@ public class Tester {
 		ScoreDoc[] hits = collector.topDocs().scoreDocs;
 
 		// 4. display results
+		System.out.println("*************************");
 		System.out.println("Found " + hits.length + " hits.");
 		for (int i = 0; i < hits.length; ++i) {
+
 			int docId = hits[i].doc;
 			Document d = searcher.doc(docId);
 			System.out.println((i + 1) + ". " + d.get("isbn") + "\t" + d.get("title"));
 		}
+		System.out.println("*************************");
 
 		// reader can only be closed when there
 		// is no need to access the documents any more.
