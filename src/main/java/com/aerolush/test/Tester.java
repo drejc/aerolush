@@ -60,17 +60,16 @@ public class Tester {
 		w.close();
 
 
-		System.out.println("******** INDEXES ********");
 		String[] list = index.listAll();
-		System.out.println(list.length);
+		System.out.println("INDEXES: " + list.length);
+		System.out.println("*************************");
 		for (int i = 0; i < list.length; i++) {
-
 			System.out.println(list[i]);
 		}
 		System.out.println("*************************");
 
 		// 2. query
-		String querystr = "action";
+		String querystr = "lucene";
 
 		// the "title" arg specifies the default field to use
 		// when no field is explicitly specified in the query.
@@ -90,8 +89,8 @@ public class Tester {
 		ScoreDoc[] hits = collector.topDocs().scoreDocs;
 
 		// 4. display results
+		System.out.println("FOUND: " + hits.length);
 		System.out.println("*************************");
-		System.out.println("Found " + hits.length + " hits.");
 		for (int i = 0; i < hits.length; ++i) {
 
 			int docId = hits[i].doc;

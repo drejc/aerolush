@@ -29,7 +29,7 @@ public class AeroDirectory extends Directory {
 	@Override
 	public String[] listAll() throws IOException {
 
-		ResultSet<File> list = sfy.query(File.class).indexName("name").now();
+		ResultSet<File> list = sfy.query(File.class).indexName("fileName").now();
 		List<String> output = new ArrayList<>();
 
 		Iterator<File> it = list.iterator();

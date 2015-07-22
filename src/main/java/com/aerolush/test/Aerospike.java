@@ -47,8 +47,8 @@ public class Aerospike {
 			log.info("Aerospike configured.");
 
 			log.info("Creating indexes...");
-			SpikeifyService.getClient().createIndex(new Policy(), namespace, File.class.getSimpleName(), "name", "name", IndexType.STRING);
-			SpikeifyService.getClient().createIndex(new Policy(), namespace, FileLock.class.getSimpleName(), "name", "name", IndexType.STRING);
+			SpikeifyService.getClient().createIndex(new Policy(), namespace, File.class.getSimpleName(), "fileName", "fileName", IndexType.STRING);
+			SpikeifyService.getClient().createIndex(new Policy(), namespace, FileLock.class.getSimpleName(), "lockName", "lockName", IndexType.STRING);
 
 			log.info("End of creating indexes.");
 

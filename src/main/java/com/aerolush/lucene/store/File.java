@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * File is split in segments of SEGMENT_SIZE
+ * File is split in segments of SEGMENT_SIZE (array of bytes)
  */
 public class File {
 
@@ -19,24 +19,35 @@ public class File {
 	@Generation
 	public Integer generation;
 
+	/**
+	 * File name
+	 */
 	@UserKey
-	public String name;	// file name ...
+	protected String name;
 
+	/**
+	 * Total file length in bytes
+	 */
 	protected long length; // total length
 
+	/**
+	 * Last modified time
+	 */
 	protected long timeModified;
 
-	/*@Ignore
-	private int numOfSegments;
-*/
+	/**
+	 * file storage ... segment ID -> array of bytes (segment starting at 1)
+	 **/
+	private Map<Long, byte[]> data = new HashMap<>();
+
+
 	@Ignore
 	private long segmentPointer = 1;
 
-	@Ignore
 	// temp buffer
-	private ByteBuffer m_buffer = ByteBuffer.allocate(SEGMENT_SIZE);
+	@Ignore
+	private ByteBuffer buffer = ByteBuffer.allocate(SEGMENT_SIZE);
 
-	private Map<Long, byte[]> data = new HashMap<>();
 
 	public File(String fileName) {
 		this();
@@ -90,15 +101,15 @@ public class File {
 	 */
 	void writeBytes(byte[] b, int offset, int writeLength) throws IOException {
 
-		int remaining = m_buffer.remaining();
+		int remaining = buffer.remaining();
 
 		if (remaining > writeLength) {
 			length += writeLength;
-			m_buffer.put(b, offset, writeLength);
+			buffer.put(b, offset, writeLength);
 		}
 		else {
 			length += remaining;
-			m_buffer.put(b, offset, remaining);
+			buffer.put(b, offset, remaining);
 
 			syncBuffer();
 
@@ -108,16 +119,16 @@ public class File {
 
 	private void syncBuffer() {
 
-		m_buffer.flip();
+		buffer.flip();
 
 		// store into data
-		data.put(segmentPointer, m_buffer.array());
+		data.put(segmentPointer, buffer.array());
 
 		// TODO: storing into database ... but should we do this here or in directory?
 
 		segmentPointer += 1;
 
-		m_buffer.clear();
+		buffer.clear();
 	}
 
 	public String getFileName() {
