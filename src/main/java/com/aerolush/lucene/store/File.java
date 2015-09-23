@@ -7,14 +7,13 @@ import com.spikeify.annotations.UserKey;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 
 /**
  * File is split in segments of SEGMENT_SIZE (array of bytes)
  */
 public class File {
 
-	static int SEGMENT_SIZE = 4096 * 10;
+	static int SEGMENT_SIZE = 4096;
 
 	@Generation
 	public Integer generation;
@@ -36,11 +35,20 @@ public class File {
 	protected long timeModified;
 
 	/**
+	 * Unique id of segments associated with file
+	 */
+	protected String segmentsName;
+
+	/**
 	 * file storage ... segment ID -> array of bytes (segment starting at 1)
 	 **/
+/*	private Map<Long, String> segments = new HashMap<>();
+
+	@Ignore
+	private static Map<String, byte[]> cachedSegments = new HashMap<>();*/
 
 	// number of segments stored in different entity
-//	private long segments = 0;
+	//	private long segments = 0;
 
 	//private Map<Long, byte[]> data = new HashMap<>();
 
@@ -55,23 +63,27 @@ public class File {
 
 
 	public File(String fileName) {
+
 		this();
 		name = fileName;
 	}
 
 	public File() {
+
 		timeModified = System.currentTimeMillis();
 		length = 0;
+		segmentsName = IdGenerator.generate(10);
 	}
 
 	public File(File file, String fileName) {
+
 		this(fileName);
 		length = file.getLength();
-	//	segments = file.segments;
-		// data = file.data;
+		segmentsName = file.segmentsName;
 	}
 
 	public long getLength() {
+
 		return length;
 	}
 
@@ -81,19 +93,21 @@ public class File {
 
 	/**
 	 * get specific segment of file
+	 *
 	 * @param segmentNo
 	 * @return
 	 * @throws IOException
 	 **/
 	ByteBuffer getSegment(long segmentNo, Spikeify spikeify) throws IOException {
 
-		List<FileSegment> list = spikeify.query(FileSegment.class).filter("name", FileSegment.getSegmentName(name, segmentNo)).now().toList();
-		FileSegment segment = list.size() > 0 ? list.get(0) : null;
+		String id = FileSegment.generateId(segmentsName, segmentNo);
+		FileSegment segment = spikeify.get(FileSegment.class).key(id).now();
 
 		// byte[] segment = data.get(segmentNo);
 		if (segment == null) {
 			throw new IOException("Cannot read segment: " + segmentNo);
 		}
+
 
 		ByteBuffer buffer = ByteBuffer.allocate(segment.data.length);
 		buffer.put(segment.data);
@@ -103,6 +117,7 @@ public class File {
 
 	/**
 	 * Fill up segments in buffer ...
+	 *
 	 * @param b
 	 * @param offset
 	 * @param writeLength
@@ -131,7 +146,7 @@ public class File {
 		buffer.flip();
 
 		// store into data
-		FileSegment segment = new FileSegment(name, segmentPointer, buffer.array());
+		FileSegment segment = new FileSegment(segmentsName, segmentPointer, buffer.array());
 		spikeify.update(segment).now();
 
 		// data.put(segmentPointer, buffer.array());
@@ -156,16 +171,13 @@ public class File {
 
 	/**
 	 * Takes data from file (file name excluded)
+	 *
 	 * @param file to copy from
 	 */
 	public void copy(File file) {
 
 		timeModified = System.currentTimeMillis();
 		length = file.length;
-		//data = file.data;
-	//	segments = file.segments;
-
-		/*segmentPointer = file.segmentPointer;
-		buffer = file.buffer;*/
+		segmentsName = file.segmentsName;
 	}
 }

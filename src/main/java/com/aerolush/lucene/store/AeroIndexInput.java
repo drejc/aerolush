@@ -6,6 +6,8 @@ import org.apache.lucene.store.IndexInput;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.List;
 
 public class AeroIndexInput extends IndexInput {
 
@@ -13,7 +15,10 @@ public class AeroIndexInput extends IndexInput {
 	private final File file;
 	private final long offset;
 	private final Spikeify sfy;
+	private final List<FileSegment> segments;
 	private long pointer;
+
+	private HashMap<Long, ByteBuffer> cachedSegment = new HashMap<>();
 
 	protected AeroIndexInput(Spikeify spikeify, String fileName) throws FileNotFoundException {
 
@@ -24,6 +29,8 @@ public class AeroIndexInput extends IndexInput {
 		if (file == null) {
 			throw new FileNotFoundException(fileName);
 		}
+
+		segments = spikeify.query(FileSegment.class).filter("name", file.segmentsName).now().toList();
 
 		sfy = spikeify;
 		offset = 0;
@@ -36,6 +43,8 @@ public class AeroIndexInput extends IndexInput {
 		this.file = file;
 		this.offset = offset;
 
+		segments = spikeify.query(FileSegment.class).filter("name", file.segmentsName).now().toList();
+
 		sfy = spikeify;
 	}
 
@@ -46,6 +55,7 @@ public class AeroIndexInput extends IndexInput {
 	 */
 	@Override
 	public void close() throws IOException {
+
 		pointer = 0;
 	}
 
@@ -107,6 +117,7 @@ public class AeroIndexInput extends IndexInput {
 
 	/**
 	 * Reads and returns a single byte.
+	 *
 	 * @return
 	 * @throws IOException
 	 */
@@ -120,9 +131,10 @@ public class AeroIndexInput extends IndexInput {
 
 	/**
 	 * Reads a specified number of bytes into an array at the specified offset.
-	 * @param bytes the array to read bytes into
+	 *
+	 * @param bytes  the array to read bytes into
 	 * @param offset the offset in the array to start storing bytes
-	 * @param len the number of bytes to read
+	 * @param len    the number of bytes to read
 	 * @throws IOException
 	 */
 	@Override
@@ -144,13 +156,36 @@ public class AeroIndexInput extends IndexInput {
 
 	private ByteBuffer getCurrentSegment() throws IOException {
 
-		ByteBuffer seg = file.getSegment(getCurrentSegmentNumber(), sfy);
+		long segmentNumber = getCurrentSegmentNumber();
+
+		// try finding segment as loaded
+		ByteBuffer seg = findSegment(segmentNumber);
+		if (seg == null) { // not found ... go get it from file
+			seg = file.getSegment(segmentNumber, sfy);
+		}
+
+		cachedSegment.put(segmentNumber, seg);
 
 		int position = seg.position();
 		int offset = getCurrentSegmentOffset();
 
 		seg.position(position + offset);
 		return seg;
+	}
+
+	private ByteBuffer findSegment(long segmentNumber) {
+
+		String id = FileSegment.generateId(file.segmentsName, segmentNumber);
+		for (FileSegment segment : segments) {
+			if (segment.id.equals(id)) {
+				ByteBuffer buffer = ByteBuffer.allocate(segment.data.length);
+				buffer.put(segment.data);
+				buffer.flip();
+				return buffer;
+			}
+		}
+
+		return null;
 	}
 
 	private int getCurrentSegmentOffset() {

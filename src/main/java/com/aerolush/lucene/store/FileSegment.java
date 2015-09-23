@@ -5,39 +5,27 @@ import com.spikeify.annotations.UserKey;
 
 public class FileSegment {
 
-
 	@UserKey
 	protected String id; //
 
-	/*
-	 * consists of file name and segment number
-	 */
 	@Indexed
 	protected String name;
-
-	@Indexed
-	protected String fileName;
-
-	protected long number;
 
 	protected byte[] data; // holding data
 
 	protected FileSegment() {
 	}
 
-	public FileSegment(String fileName, long segmentNumber, byte[] data) {
+	public FileSegment(String fileSegmentName, long segmentNumber, byte[] data) {
 		this();
 
-		this.id = IdGenerator.generateKey();
-		this.fileName = fileName;
-		this.number = segmentNumber;
-
-		this.name = getSegmentName(fileName, segmentNumber);
+		this.id = generateId(fileSegmentName, segmentNumber);
+		this.name = fileSegmentName;
 		this.data = data;
 	}
 
-	static String getSegmentName(String fileName, long segmentNumber) {
+	static String generateId(String fileSegmentName, long segmentNumber) {
 
-		return fileName + "::" + segmentNumber;
+		return fileSegmentName + "::" + segmentNumber;
 	}
 }

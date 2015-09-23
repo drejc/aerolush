@@ -94,15 +94,20 @@ public class FullTextSearchTest {
 	@Test
 	public void testSearch() throws IOException {
 
+		find("gutenberg");
+		find("huckleberry");
+	}
+
+	private void find(String search) throws IOException {
+
 		StandardAnalyzer analyzer = new StandardAnalyzer();
-		Query q = null;
+		Query query = null;
 		try {
-			q = new QueryParser("text", analyzer).parse("gutenberg");
+			query = new QueryParser("text", analyzer).parse(search);
 		} catch (org.apache.lucene.queryparser.classic.ParseException e) {
 			e.printStackTrace();
 		}
 
-		// 3. search
 		int hitsPerPage = 100;
 
 		Directory index = new AeroDirectory(getSfy());
@@ -110,12 +115,14 @@ public class FullTextSearchTest {
 		IndexSearcher searcher = new IndexSearcher(reader);
 
 		TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage);
-		searcher.search(q, collector);
+		searcher.search(query, collector);
 		ScoreDoc[] hits = collector.topDocs().scoreDocs;
 
 		// 4. display results
+		System.out.println("*************************");
 		System.out.println("FOUND: " + hits.length);
 		System.out.println("*************************");
+
 		for (int i = 0; i < hits.length; ++i) {
 
 			int docId = hits[i].doc;
@@ -128,4 +135,5 @@ public class FullTextSearchTest {
 		// is no need to access the documents any more.
 		reader.close();
 	}
+
 }

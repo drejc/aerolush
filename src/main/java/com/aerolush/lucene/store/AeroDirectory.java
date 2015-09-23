@@ -117,16 +117,6 @@ public class AeroDirectory extends Directory {
 			// 1. we copy old file to new file ... and give it a new name
 			final File newFile = new File(found, newName);
 
-			List<FileSegment> oldSegments = sfy.query(FileSegment.class).filter("fileName", oldName).now().toList();
-
-			// rename segments ... TODO: this should not be necesary ... but for testing purposes only
-			for (FileSegment oldSegment: oldSegments) {
-				oldSegment.fileName = newName;
-				oldSegment.name = FileSegment.getSegmentName(newName, oldSegment.number);
-
-				sfy.update(oldSegment).now();
-			}
-
 			sfy.transact(5, new Work<File>() {
 
 				@Override
