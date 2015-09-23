@@ -1,20 +1,20 @@
 package com.aerolush.lucene.store;
 
+import com.spikeify.Spikeify;
 import com.spikeify.annotations.Generation;
 import com.spikeify.annotations.Ignore;
 import com.spikeify.annotations.UserKey;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * File is split in segments of SEGMENT_SIZE (array of bytes)
  */
 public class File {
 
-	static int SEGMENT_SIZE = 4096;
+	static int SEGMENT_SIZE = 4096 * 10;
 
 	@Generation
 	public Integer generation;
@@ -38,7 +38,11 @@ public class File {
 	/**
 	 * file storage ... segment ID -> array of bytes (segment starting at 1)
 	 **/
-	private Map<Long, byte[]> data = new HashMap<>();
+
+	// number of segments stored in different entity
+//	private long segments = 0;
+
+	//private Map<Long, byte[]> data = new HashMap<>();
 
 
 	// will not be stored into entity ... runtime property only
@@ -63,7 +67,8 @@ public class File {
 	public File(File file, String fileName) {
 		this(fileName);
 		length = file.getLength();
-		data = file.data;
+	//	segments = file.segments;
+		// data = file.data;
 	}
 
 	public long getLength() {
@@ -80,15 +85,18 @@ public class File {
 	 * @return
 	 * @throws IOException
 	 **/
-	ByteBuffer getSegment(long segmentNo) throws IOException {
+	ByteBuffer getSegment(long segmentNo, Spikeify spikeify) throws IOException {
 
-		byte[] segment = data.get(segmentNo);
+		List<FileSegment> list = spikeify.query(FileSegment.class).filter("name", FileSegment.getSegmentName(name, segmentNo)).now().toList();
+		FileSegment segment = list.size() > 0 ? list.get(0) : null;
+
+		// byte[] segment = data.get(segmentNo);
 		if (segment == null) {
 			throw new IOException("Cannot read segment: " + segmentNo);
 		}
 
-		ByteBuffer buffer = ByteBuffer.allocate(segment.length);
-		buffer.put(segment);
+		ByteBuffer buffer = ByteBuffer.allocate(segment.data.length);
+		buffer.put(segment.data);
 		buffer.flip();
 		return buffer;
 	}
@@ -100,7 +108,7 @@ public class File {
 	 * @param writeLength
 	 * @throws IOException
 	 */
-	void writeBytes(byte[] b, int offset, int writeLength) throws IOException {
+	void writeBytes(byte[] b, int offset, int writeLength, Spikeify spikeify) throws IOException {
 
 		int remaining = buffer.remaining();
 
@@ -112,18 +120,21 @@ public class File {
 			length += remaining;
 			buffer.put(b, offset, remaining);
 
-			syncBuffer();
+			syncBuffer(spikeify);
 
-			writeBytes(b, offset + remaining, writeLength - remaining);
+			writeBytes(b, offset + remaining, writeLength - remaining, spikeify);
 		}
 	}
 
-	private void syncBuffer() {
+	private void syncBuffer(Spikeify spikeify) {
 
 		buffer.flip();
 
 		// store into data
-		data.put(segmentPointer, buffer.array());
+		FileSegment segment = new FileSegment(name, segmentPointer, buffer.array());
+		spikeify.update(segment).now();
+
+		// data.put(segmentPointer, buffer.array());
 
 		// TODO: storing into database ... but should we do this here or in directory?
 
@@ -137,10 +148,10 @@ public class File {
 		return name;
 	}
 
-	void close() {
+	void close(Spikeify spikeify) {
 
 		// Flush whats left in the buffer
-		syncBuffer();
+		syncBuffer(spikeify);
 	}
 
 	/**
@@ -151,6 +162,10 @@ public class File {
 
 		timeModified = System.currentTimeMillis();
 		length = file.length;
-		data = file.data;
+		//data = file.data;
+	//	segments = file.segments;
+
+		/*segmentPointer = file.segmentPointer;
+		buffer = file.buffer;*/
 	}
 }

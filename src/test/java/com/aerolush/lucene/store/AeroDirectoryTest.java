@@ -15,6 +15,7 @@ public class AeroDirectoryTest {
 
 	@Before
 	public void setUp() {
+
 		aerospike.getSfy().truncateNamespace("test");
 	}
 
@@ -24,8 +25,7 @@ public class AeroDirectoryTest {
 
 		Directory directory = new AeroDirectory(aerospike.getSfy());
 
-		// 1. prepare
-
+		// prepare
 		File old = new File("oldName");
 		aerospike.getSfy().create(old).now();
 
@@ -33,12 +33,10 @@ public class AeroDirectoryTest {
 		assertEquals(1, list.length);
 		assertEquals("oldName", list[0]);
 
-
 		// rename
 		directory.renameFile("oldName", "newName");
 
-
-		// control
+		// check
 		list = directory.listAll();
 		assertEquals(1, list.length);
 		assertEquals("newName", list[0]);

@@ -1,11 +1,12 @@
-package com.aerolush.test;
+package com.aerolush;
 
 import com.aerolush.lucene.store.AeroDirectory;
+import com.aerolush.test.Aerospike;
 import com.spikeify.Spikeify;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -17,75 +18,97 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.junit.Before;
+import org.junit.Test;
 
-import java.io.IOException;
+import java.io.*;
 
-/**
- * For testing purposes only ... proof of concept stage
- */
-public class Tester {
+public class FullTextSearchTest {
+
+	private static final String TEXT_FILE = "/AdventuresOfHuckleberryFinn.txt";
 
 	private final Aerospike spike;
 
-	public Tester() {
+	public FullTextSearchTest() {
 
 		spike = new Aerospike();
 	}
 
 	private Spikeify getSfy() {
+
 		return spike.getSfy();
 	}
 
-	public void init() throws IOException {
+	@Before
+	public void prepareIndex() throws IOException {
 
-		// null state ...
 		getSfy().truncateNamespace("test");
 
-		// 0. Specify the analyzer for tokenizing text.
-		//    The same analyzer should be used for indexing and searching
+		System.out.println("Reading: " + TEXT_FILE);
+		// load large set of text data and create and index ...
+		File file = new File(getClass().getResource(TEXT_FILE).getFile());
+		BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF8"));
+
+		// create index
 		StandardAnalyzer analyzer = new StandardAnalyzer();
 
-		// 1. create the index
-		//Directory index = new RAMDirectory();
 		Directory index = new AeroDirectory(getSfy());
-
 		IndexWriterConfig config = new IndexWriterConfig(analyzer);
-
 		IndexWriter w = new IndexWriter(index, config);
 
-		for (int i = 0; i < 10; i++) {
-			addDoc(w, "Lucene in Action", "193398817");
-			addDoc(w, "Lucene for Dummies", "55320055Z");
-			addDoc(w, "Managing Gigabytes", "55063554A");
-			addDoc(w, "The Art of Action Computer Science", "9900333X");
+		long startTime = System.currentTimeMillis();
+
+		String line;
+		long lineNumber = 0;
+
+		while ((line = in.readLine()) != null) {
+
+			lineNumber ++;
+
+			// read the file line by line and build up index in Aerolush
+			// additionally count selected words to have data for search checks
+			if (line.trim().length() > 0) {
+
+				addDoc(w, line, lineNumber);
+			}
 		}
+
 		w.close();
+		in.close();
+		index.close();
 
+		long timeSpent = System.currentTimeMillis() - startTime;
+		System.out.println("Prepared index from: " + TEXT_FILE + ", in: " + timeSpent/1000 + "s");
+	}
 
-		String[] list = index.listAll();
-		System.out.println("INDEXES: " + list.length);
-		System.out.println("*************************");
-		for (int i = 0; i < list.length; i++) {
-			System.out.println(list[i]);
-		}
-		System.out.println("*************************");
+	/**
+	 * storing two things here ... the whole line ... and the line number
+ 	 */
+	private static void addDoc(IndexWriter w, String text, long lineNumber) throws IOException {
+		Document doc = new Document();
+		doc.add(new TextField("text", text, Field.Store.YES));
+		doc.add(new LongField("line", lineNumber, Field.Store.YES));
+		w.addDocument(doc);
+	}
 
-		// 2. query
-		String querystr = "lucene";
+	@Test
+	public void testSearch() throws IOException {
 
-		// the "title" arg specifies the default field to use
-		// when no field is explicitly specified in the query.
+		StandardAnalyzer analyzer = new StandardAnalyzer();
 		Query q = null;
 		try {
-			q = new QueryParser("title", analyzer).parse(querystr);
+			q = new QueryParser("text", analyzer).parse("gutenberg");
 		} catch (org.apache.lucene.queryparser.classic.ParseException e) {
 			e.printStackTrace();
 		}
 
 		// 3. search
-		int hitsPerPage = 10;
+		int hitsPerPage = 100;
+
+		Directory index = new AeroDirectory(getSfy());
 		IndexReader reader = DirectoryReader.open(index);
 		IndexSearcher searcher = new IndexSearcher(reader);
+
 		TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage);
 		searcher.search(q, collector);
 		ScoreDoc[] hits = collector.topDocs().scoreDocs;
@@ -97,21 +120,12 @@ public class Tester {
 
 			int docId = hits[i].doc;
 			Document d = searcher.doc(docId);
-			System.out.println((i + 1) + ". " + d.get("isbn") + "\t" + d.get("title"));
+			System.out.println((i + 1) + ". " + d.get("line") + "\t" + d.get("text"));
 		}
 		System.out.println("*************************");
 
 		// reader can only be closed when there
 		// is no need to access the documents any more.
 		reader.close();
-	}
-
-	private static void addDoc(IndexWriter w, String title, String isbn) throws IOException {
-		Document doc = new Document();
-		doc.add(new TextField("title", title, Field.Store.YES));
-
-		// use a string field for isbn because we don't want it tokenized
-		doc.add(new StringField("isbn", isbn, Field.Store.YES));
-		w.addDocument(doc);
 	}
 }

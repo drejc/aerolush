@@ -13,6 +13,11 @@ public class AeroLockFactory extends LockFactory {
 		this.sfy = sfy;
 	}
 
+	/**
+	 * Return a new Lock instance identified by lockName.
+	 * @param directory parent directory
+	 * @param lockName name of the lock to be created.
+	 */
 	@Override
 	public Lock makeLock(Directory directory, String lockName) {
 

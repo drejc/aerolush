@@ -8,7 +8,8 @@ import java.io.IOException;
 import java.util.zip.CRC32;
 
 /**
- * Class for output to a file in a Directory. A random-access output stream. Used for all Lucene index output operations.
+ * Class for output to a file in a Directory.
+ * A random-access output stream. Used for all Lucene index output operations.
  */
 public class AeroIndexOutput extends IndexOutput {
 
@@ -36,7 +37,7 @@ public class AeroIndexOutput extends IndexOutput {
 	@Override
 	public void close() throws IOException {
 		// todo: add transaction
-		file.close();
+		file.close(sfy);
 
 		sfy.transact(5, new Work<File>() {
 			@Override
@@ -86,7 +87,7 @@ public class AeroIndexOutput extends IndexOutput {
 		crcHash.update(bajt);
 		pointer += 1;
 
-		file.writeBytes(new byte[] {bajt}, 0, 1);
+		file.writeBytes(new byte[] {bajt}, 0, 1, sfy);
 	}
 
 	/**
@@ -102,6 +103,6 @@ public class AeroIndexOutput extends IndexOutput {
 		crcHash.update(bytes, offset, length);
 		pointer += length;
 
-		file.writeBytes(bytes, offset, length);
+		file.writeBytes(bytes, offset, length, sfy);
 	}
 }

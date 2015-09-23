@@ -10,19 +10,17 @@ public class AeroLock extends Lock {
 	private final Spikeify sfy;
 	private final String name;
 
-	public AeroLock(Spikeify sfy, String lockName) {
+	public AeroLock(Spikeify spikeify, String lockName) {
 
-		this.sfy = sfy;
-		this.name = lockName;
+		sfy = spikeify;
+		name = lockName;
 	}
 
 	@Override
 	public boolean obtain() throws IOException {
 
 		FileLock lock = new FileLock(name);
-
 		sfy.create(lock).now();
-
 		return true;
 	}
 

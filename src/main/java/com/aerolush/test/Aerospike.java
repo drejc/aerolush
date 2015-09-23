@@ -1,10 +1,7 @@
 package com.aerolush.test;
 
-import com.aerolush.lucene.store.File;
-import com.aerolush.lucene.store.FileLock;
+import com.aerolush.lucene.store.FileSegment;
 import com.aerospike.client.Host;
-import com.aerospike.client.policy.Policy;
-import com.aerospike.client.query.IndexType;
 import com.spikeify.Spikeify;
 import com.spikeify.SpikeifyService;
 
@@ -47,9 +44,12 @@ public class Aerospike {
 			log.info("Aerospike configured.");
 
 			log.info("Creating indexes...");
-			SpikeifyService.getClient().createIndex(new Policy(), namespace, File.class.getSimpleName(), "fileName", "fileName", IndexType.STRING);
-			SpikeifyService.getClient().createIndex(new Policy(), namespace, FileLock.class.getSimpleName(), "lockName", "lockName", IndexType.STRING);
 
+			SpikeifyService.register(FileSegment.class);
+
+			/*SpikeifyService.getClient().createIndex(new Policy(), namespace, File.class.getSimpleName(), "fileName", "fileName", IndexType.STRING);
+			SpikeifyService.getClient().createIndex(new Policy(), namespace, FileLock.class.getSimpleName(), "lockName", "lockName", IndexType.STRING);
+*/
 			log.info("End of creating indexes.");
 
 		}

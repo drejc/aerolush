@@ -2,6 +2,7 @@ package com.aerolush.lucene.store;
 
 import com.aerospike.client.Value;
 import com.spikeify.Spikeify;
+import com.spikeify.Work;
 import org.apache.lucene.store.*;
 
 import java.io.FileNotFoundException;
@@ -20,10 +21,6 @@ public class AeroDirectory extends Directory {
 		lockFactory = new AeroLockFactory(sfy);
 	}
 
-	public Spikeify getSfy() {
-		return sfy;
-	}
-
 	@Override
 	public String[] listAll() throws IOException {
 
@@ -32,7 +29,7 @@ public class AeroDirectory extends Directory {
 		String[] output = new String[list.size()];
 
 		// TODO: ... create keysAsString for Spikeify so we can use: output = list.toArray();
-		for(int index = 0; index < list.size(); index++) {
+		for (int index = 0; index < list.size(); index++) {
 			output[index] = list.get(index).toString();
 		}
 
@@ -63,6 +60,7 @@ public class AeroDirectory extends Directory {
 
 	/**
 	 * Create file
+	 *
 	 * @param name
 	 * @param ioContext
 	 * @return
@@ -71,11 +69,12 @@ public class AeroDirectory extends Directory {
 	@Override
 	public IndexOutput createOutput(String name, IOContext ioContext) throws IOException {
 
-		return new AeroIndexOutput(getSfy(), name);
+		return new AeroIndexOutput(sfy, name);
 	}
 
 	/**
 	 * Read file
+	 *
 	 * @param name
 	 * @param ioContext
 	 * @return
@@ -87,15 +86,26 @@ public class AeroDirectory extends Directory {
 		return new AeroIndexInput(sfy, name);
 	}
 
+	/**
+	 * Ensure that any writes to these files are moved to
+	 * stable storage.  Lucene uses this to properly commit
+	 * changes to the index, to prevent a machine/OS crash
+	 * from corrupting the index.
+	 * <br>
+	 * NOTE: Clients may call this method for same files over
+	 * and over again, so some impls might optimize for that.
+	 * For other impls the operation can be a noop, for various
+	 * reasons.
+	 */
 	@Override
 	public void sync(Collection<String> collection) throws IOException {
-		// TODO: ...
+		// nothing to do ... all changes are always stored
 	}
 
 	@Override
 	public void renameFile(String oldName, String newName) throws IOException {
 
-		File found = sfy.get(File.class).key(oldName).now();
+		final File found = sfy.get(File.class).key(oldName).now();
 
 		if (found != null) {
 			File foundNew = sfy.get(File.class).key(newName).now();
@@ -105,13 +115,26 @@ public class AeroDirectory extends Directory {
 
 			// we can not rename the file key so we need to delete and create a new file instead
 			// 1. we copy old file to new file ... and give it a new name
-			File newFile = new File(found, newName);
+			final File newFile = new File(found, newName);
 
-			sfy.transact(5, () -> {
+			List<FileSegment> oldSegments = sfy.query(FileSegment.class).filter("fileName", oldName).now().toList();
 
-				sfy.delete(found).now();
-				sfy.create(newFile).now();
-				return found;
+			// rename segments ... TODO: this should not be necesary ... but for testing purposes only
+			for (FileSegment oldSegment: oldSegments) {
+				oldSegment.fileName = newName;
+				oldSegment.name = FileSegment.getSegmentName(newName, oldSegment.number);
+
+				sfy.update(oldSegment).now();
+			}
+
+			sfy.transact(5, new Work<File>() {
+
+				@Override
+				public File run() {
+					sfy.delete(found).now();
+					sfy.create(newFile).now();
+					return found;
+				}
 			});
 
 			return;
@@ -120,15 +143,24 @@ public class AeroDirectory extends Directory {
 		throw new FileNotFoundException(oldName);
 	}
 
+	/**
+	 * Lock's file fo operation
+	 * TODO: Consider storing this info direclty into file entity? ...
+	 *
+	 * @param name
+	 * @return
+	 */
 	@Override
 	public Lock makeLock(String name) {
 
 		return lockFactory.makeLock(this, name);
 	}
 
+	/**
+	 * Closes the store.
+	 **/
 	@Override
 	public void close() throws IOException {
-		// nothing to do ... or is there something?
-
+		// nothing to do ...
 	}
 }

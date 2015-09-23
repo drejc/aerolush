@@ -12,27 +12,31 @@ public class AeroIndexInput extends IndexInput {
 	// private final Spikeify sfy;
 	private final File file;
 	private final long offset;
+	private final Spikeify sfy;
 	private long pointer;
 
-	protected AeroIndexInput(Spikeify sfy, String fileName) throws FileNotFoundException {
+	protected AeroIndexInput(Spikeify spikeify, String fileName) throws FileNotFoundException {
 
 		// resourceDescription should be a non-null, opaque string describing this resource; it's returned from toString().
 		super(fileName);
 
-		file = sfy.get(File.class).key(fileName).now();
+		file = spikeify.get(File.class).key(fileName).now();
 		if (file == null) {
 			throw new FileNotFoundException(fileName);
 		}
 
+		sfy = spikeify;
 		offset = 0;
 	}
 
-	protected AeroIndexInput(File file, long offset) {
+	protected AeroIndexInput(Spikeify spikeify, File file, long offset) {
 
 		super(file.getFileName());
 
 		this.file = file;
 		this.offset = offset;
+
+		sfy = spikeify;
 	}
 
 	/**
@@ -91,7 +95,7 @@ public class AeroIndexInput extends IndexInput {
 	@Override
 	public IndexInput slice(String sliceDescription, long offset, final long length) throws IOException {
 
-		return new AeroIndexInput(file, offset) {
+		return new AeroIndexInput(sfy, file, offset) {
 			@Override
 			public long length() {
 
@@ -140,7 +144,7 @@ public class AeroIndexInput extends IndexInput {
 
 	private ByteBuffer getCurrentSegment() throws IOException {
 
-		ByteBuffer seg = file.getSegment(getCurrentSegmentNumber());
+		ByteBuffer seg = file.getSegment(getCurrentSegmentNumber(), sfy);
 
 		int position = seg.position();
 		int offset = getCurrentSegmentOffset();
