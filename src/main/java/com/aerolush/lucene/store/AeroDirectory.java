@@ -1,14 +1,12 @@
 package com.aerolush.lucene.store;
 
-import com.spikeify.ResultSet;
+import com.aerospike.client.Value;
 import com.spikeify.Spikeify;
 import org.apache.lucene.store.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 public class AeroDirectory extends Directory {
@@ -29,16 +27,16 @@ public class AeroDirectory extends Directory {
 	@Override
 	public String[] listAll() throws IOException {
 
-		ResultSet<File> list = sfy.query(File.class).indexName("fileName").now();
-		List<String> output = new ArrayList<>();
+		// lists only file names ... not whole entities
+		List<Value> list = sfy.scanAll(File.class).keys();
+		String[] output = new String[list.size()];
 
-		Iterator<File> it = list.iterator();
-		while (it.hasNext()) {
-			File file = it.next();
-			output.add(file.name);
+		// TODO: ... create keysAsString for Spikeify so we can use: output = list.toArray();
+		for(int index = 0; index < list.size(); index++) {
+			output[index] = list.get(index).toString();
 		}
 
-		return output.toArray(new String[output.size()]);
+		return output;
 	}
 
 	@Override
@@ -91,7 +89,7 @@ public class AeroDirectory extends Directory {
 
 	@Override
 	public void sync(Collection<String> collection) throws IOException {
-		// TODO: ... applicable ? ...probably not
+		// TODO: ...
 	}
 
 	@Override
@@ -105,7 +103,8 @@ public class AeroDirectory extends Directory {
 				throw new IOException("File with: " + newName + ", already exists!");
 			}
 
-
+			// we can not rename the file key so we need to delete and create a new file instead
+			// 1. we copy old file to new file ... and give it a new name
 			File newFile = new File(found, newName);
 
 			sfy.transact(5, () -> {

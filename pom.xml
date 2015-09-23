@@ -15,6 +15,16 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <version.aerospike>3.1.4</version.aerospike>
+        <version.spikeify>0.2.7</version.spikeify>
+        <version.jackson>[2.6,2.7)</version.jackson>
+
+        <version.lucene>5.2.1</version.lucene>
+
+        <version.junit>4.12</version.junit>
+        <version.mockito-all>1.10.8</version.mockito-all>
+        <version.trajano>1.0.1</version.trajano>
     </properties>
 
     <licenses>
@@ -43,64 +53,85 @@
         <dependency>
             <groupId>com.aerospike</groupId>
             <artifactId>aerospike-client</artifactId>
-            <version>3.1.2</version>
+            <version>3.1.5</version>
         </dependency>
 
         <dependency>
             <groupId>com.spikeify</groupId>
             <artifactId>core</artifactId>
-            <version>0.1-alpha-14</version>
+            <version>0.2.7</version>
         </dependency>
 
         <!-- Lucene -->
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>5.2.1</version>
+            <version>${version.lucene}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
-            <version>5.2.1</version>
+            <version>${version.lucene}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-test-framework</artifactId>
-            <version>5.2.1</version>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
-            <version>5.2.1</version>
+            <version>${version.lucene}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
-            <version>5.2.1</version>
+            <version>${version.lucene}</version>
         </dependency>
 
         <!--JSON serialization-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>[2.5,2.6)</version>
+            <version>${version.jackson}</version>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>[2.5,2.6)</version>
+            <version>${version.jackson}</version>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>[2.5,2.6)</version>
+            <version>${version.jackson}</version>
         </dependency>
 
         <!--Testing stuff bellow-->
         <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-test-framework</artifactId>
+            <version>${version.lucene}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>${version.junit}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.trajano.commons</groupId>
+            <artifactId>commons-testing</artifactId>
+            <version>${version.trajano}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${version.mockito-all}</version>
             <scope>test</scope>
         </dependency>
 

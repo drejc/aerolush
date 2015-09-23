@@ -41,6 +41,7 @@ public class File {
 	private Map<Long, byte[]> data = new HashMap<>();
 
 
+	// will not be stored into entity ... runtime property only
 	@Ignore
 	private long segmentPointer = 1;
 
@@ -140,5 +141,16 @@ public class File {
 
 		// Flush whats left in the buffer
 		syncBuffer();
+	}
+
+	/**
+	 * Takes data from file (file name excluded)
+	 * @param file to copy from
+	 */
+	public void copy(File file) {
+
+		timeModified = System.currentTimeMillis();
+		length = file.length;
+		data = file.data;
 	}
 }

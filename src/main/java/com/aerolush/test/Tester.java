@@ -46,8 +46,7 @@ public class Tester {
 		StandardAnalyzer analyzer = new StandardAnalyzer();
 
 		// 1. create the index
-		 // Directory index = new RAMDirectory();
-
+		//Directory index = new RAMDirectory();
 		Directory index = new AeroDirectory(getSfy());
 
 		IndexWriterConfig config = new IndexWriterConfig(analyzer);

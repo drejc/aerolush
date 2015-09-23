@@ -20,9 +20,9 @@ public class FileLock {
 
 	private FileLock() {}
 
-	public FileLock(String name) {
+	public FileLock(String fileName) {
 
-		this.name = name;
-		this.lockTime = System.currentTimeMillis();
+		name = fileName;
+		lockTime = System.currentTimeMillis();
 	}
 }
